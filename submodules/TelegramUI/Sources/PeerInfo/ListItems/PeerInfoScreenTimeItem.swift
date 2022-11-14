@@ -94,7 +94,7 @@ private final class PeerInfoScreenTimeItemNode: PeerInfoScreenItemNode {
              string: "Moscow Time"),
              maximumNumberOfLines:1,
              truncationType: .end))*/
-По
+
             let (_, apply) = makeLayout(
                 TextNodeLayoutArguments(
                     attributedString: NSAttributedString(
