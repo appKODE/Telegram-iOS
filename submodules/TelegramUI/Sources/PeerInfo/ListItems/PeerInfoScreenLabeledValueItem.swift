@@ -52,6 +52,7 @@ final class PeerInfoScreenLabeledValueItem: PeerInfoScreenItem {
         contextAction: ((ASDisplayNode, ContextGesture?, CGPoint?) -> Void)? = nil,
         requestLayout: @escaping () -> Void
     ) {
+        print("label: \(label); text: \(text)")
         self.id = id
         self.label = label
         self.text = text

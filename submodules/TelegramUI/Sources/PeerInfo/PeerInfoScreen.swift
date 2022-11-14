@@ -935,6 +935,7 @@ private func infoItems(data: PeerInfoScreenData?, context: AccountContext, prese
     
     enum Section: Int, CaseIterable {
         case groupLocation
+        case time
         case calls
         case peerInfo
         case peerMembers
@@ -956,7 +957,9 @@ private func infoItems(data: PeerInfoScreenData?, context: AccountContext, prese
         if !callMessages.isEmpty {
             items[.calls]!.append(PeerInfoScreenCallListItem(id: 20, messages: callMessages))
         }
-        
+
+        items[.time]!.append(PeerInfoScreenTimeItem(id: 21))
+
         if let phone = user.phone {
             let formattedPhone = formatPhoneNumber(phone)
             items[.peerInfo]!.append(PeerInfoScreenLabeledValueItem(id: 2, label: presentationData.strings.ContactInfo_PhoneLabelMobile, text: formattedPhone, textColor: .accent, action: { node in
@@ -7881,7 +7884,30 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, UIScrollViewDelegate 
         }
         let headerInset = sectionInset
         
-        var headerHeight = self.headerNode.update(width: layout.size.width, containerHeight: layout.size.height, containerInset: headerInset, statusBarHeight: layout.statusBarHeight ?? 0.0, navigationHeight: navigationHeight, isModalOverlay: layout.isModalOverlay, isMediaOnly: self.isMediaOnly, contentOffset: self.isMediaOnly ? 212.0 : self.scrollNode.view.contentOffset.y, paneContainerY: self.paneContainerNode.frame.minY, presentationData: self.presentationData, peer: self.data?.peer, cachedData: self.data?.cachedData, threadData: self.data?.threadData, notificationSettings: self.data?.notificationSettings, statusData: self.data?.status, panelStatusData: self.customStatusData, isSecretChat: self.peerId.namespace == Namespaces.Peer.SecretChat, isContact: self.data?.isContact ?? false, isSettings: self.isSettings, state: self.state, metrics: layout.metrics, transition: transition, additive: additive)
+        var headerHeight = self.headerNode.update(width: layout.size.width,
+                                                  containerHeight: layout.size.height,
+                                                  containerInset: headerInset,
+                                                  statusBarHeight: layout.statusBarHeight ?? 0.0,
+                                                  navigationHeight: navigationHeight,
+                                                  isModalOverlay: layout.isModalOverlay,
+                                                  isMediaOnly: self.isMediaOnly,
+                                                  contentOffset: self.isMediaOnly ? 212.0 : self.scrollNode.view.contentOffset.y,
+                                                  paneContainerY: self.paneContainerNode.frame.minY,
+                                                  presentationData: self.presentationData,
+                                                  peer: self.data?.peer,
+                                                  cachedData: self.data?.cachedData,
+                                                  threadData: self.data?.threadData,
+                                                  notificationSettings: self.data?.notificationSettings,
+                                                  statusData: self.data?.status,
+                                                  panelStatusData: self.customStatusData,
+                                                  isSecretChat: self.peerId.namespace == Namespaces.Peer.SecretChat,
+                                                  isContact: self.data?.isContact ?? false,
+                                                  isSettings: self.isSettings,
+                                                  state: self.state,
+                                                  metrics: layout.metrics,
+                                                  transition: transition,
+                                                  additive: additive)
+
         if !self.isSettings && !self.state.isEditing {
             headerHeight += 71.0
         }
@@ -7901,7 +7927,9 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, UIScrollViewDelegate 
             insets.left += sectionInset
             insets.right += sectionInset
             
-            let items = self.isSettings ? settingsItems(data: self.data, context: self.context, presentationData: self.presentationData, interaction: self.interaction, isExpanded: self.headerNode.isAvatarExpanded) : infoItems(data: self.data, context: self.context, presentationData: self.presentationData, interaction: self.interaction, nearbyPeerDistance: self.nearbyPeerDistance, reactionSourceMessageId: self.reactionSourceMessageId, callMessages: self.callMessages, chatLocation: self.chatLocation)
+            let items = self.isSettings ?
+            settingsItems(data: self.data, context: self.context, presentationData: self.presentationData, interaction: self.interaction, isExpanded: self.headerNode.isAvatarExpanded) :
+            infoItems(data: self.data, context: self.context, presentationData: self.presentationData, interaction: self.interaction, nearbyPeerDistance: self.nearbyPeerDistance, reactionSourceMessageId: self.reactionSourceMessageId, callMessages: self.callMessages, chatLocation: self.chatLocation)
             
             contentHeight += headerHeight
             if !(self.isSettings && self.state.isEditing) {
@@ -8925,6 +8953,7 @@ public final class PeerInfoScreenImpl: ViewController, PeerInfoScreen, KeyShortc
     }
     
     override public func viewDidAppear(_ animated: Bool) {
+        print("🔴 PeerInfoScreen viewDidAppear")
         super.viewDidAppear(animated)
         
         var chatNavigationStack: [PeerId] = []
