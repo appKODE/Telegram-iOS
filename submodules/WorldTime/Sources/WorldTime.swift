@@ -3,7 +3,7 @@ import UIKit
 import SwiftSignalKit
 import TelegramCore
 
-fileprivate func utcFormatter() -> DateFormatter {
+fileprivate func iso8601Formatter() -> DateFormatter {
     let formatter = DateFormatter()
     formatter.calendar = Calendar(identifier: .iso8601)
     formatter.locale = Locale(identifier: "en_US_POSIX")
@@ -20,9 +20,12 @@ public func fetchMoscowTime() -> Signal<Date, NoError> {
             if case let .dataPart(_, data, _, complete) = next, complete {
                 // JSON(data: data) fails to produce parsed instance
                 if let jsonObject = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
-                    if let datetimeString = jsonObject["datetime"] as? String {
-                        if let datetime = utcFormatter().date(from: "2000-11-15T00:04:12.085136+03:00") {
-                            subscriber.putNext(datetime)
+                    if let datetimeString = jsonObject["datetime"] as? String,
+                       let timezoneString = jsonObject["timezone"] as? String {
+                        if let utcDatetime = iso8601Formatter().date(from: datetimeString),
+                           let timeZone = TimeZone(identifier: timezoneString) {
+                            let localDate = utcDatetime.addingTimeInterval(TimeInterval(timeZone.secondsFromGMT()))
+                            subscriber.putNext(localDate)
                         }
                     }
                 }
