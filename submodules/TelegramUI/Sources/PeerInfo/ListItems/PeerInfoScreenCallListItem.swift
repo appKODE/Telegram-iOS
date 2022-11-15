@@ -12,13 +12,16 @@ import ItemListUI
 
 final class PeerInfoScreenCallListItem: PeerInfoScreenItem {
     let id: AnyHashable
+    let date: Date?
     let messages: [Message]
     
     init(
         id: AnyHashable,
+        date: Date?,
         messages: [Message]
     ) {
         self.id = id
+        self.date = date
         self.messages = messages
     }
     
@@ -65,7 +68,7 @@ private final class PeerInfoScreenCallListItemNode: PeerInfoScreenItemNode {
         
         self.bottomSeparatorNode.backgroundColor = presentationData.theme.list.itemBlocksSeparatorColor
         
-        let addressItem = ItemListCallListItem(presentationData: ItemListPresentationData(presentationData), dateTimeFormat: presentationData.dateTimeFormat, messages: item.messages, sectionId: 0, style: .blocks, displayDecorations: false)
+        let addressItem = ItemListCallListItem(presentationData: ItemListPresentationData(presentationData), dateTimeFormat: presentationData.dateTimeFormat, date: item.date, messages: item.messages, sectionId: 0, style: .blocks, displayDecorations: false)
         
         let params = ListViewItemLayoutParams(width: width, leftInset: safeInsets.left, rightInset: safeInsets.right, availableHeight: 1000.0)
         
