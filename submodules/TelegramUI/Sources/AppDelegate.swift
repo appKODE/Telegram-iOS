@@ -670,6 +670,7 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
                 completion(false)
             }
         }, siriAuthorization: {
+            /* // todo: suddenly stopped working. Why?
             if #available(iOS 10, *) {
                 switch INPreferences.siriAuthorizationStatus() {
                     case .authorized:
@@ -683,7 +684,8 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
                 }
             } else {
                 return .denied
-            }
+            }*/
+            return .denied
         }, getWindowHost: {
             return self.nativeWindow
         }, presentNativeController: { controller in

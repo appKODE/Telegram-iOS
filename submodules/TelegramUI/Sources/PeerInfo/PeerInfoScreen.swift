@@ -81,6 +81,7 @@ import ForumCreateTopicScreen
 import NotificationExceptionsScreen
 import ChatTimerScreen
 import NotificationPeerExceptionController
+import WorldTime
 
 protocol PeerInfoScreenItem: AnyObject {
     var id: AnyHashable { get }
@@ -928,14 +929,13 @@ private func settingsEditingItems(data: PeerInfoScreenData?, state: PeerInfoStat
     return result
 }
 
-private func infoItems(data: PeerInfoScreenData?, context: AccountContext, presentationData: PresentationData, interaction: PeerInfoInteraction, nearbyPeerDistance: Int32?, reactionSourceMessageId: MessageId?, callMessages: [Message], chatLocation: ChatLocation) -> [(AnyHashable, [PeerInfoScreenItem])] {
+private func infoItems(data: PeerInfoScreenData?, context: AccountContext, presentationData: PresentationData, interaction: PeerInfoInteraction, nearbyPeerDistance: Int32?, reactionSourceMessageId: MessageId?, date: Date?, callMessages: [Message], chatLocation: ChatLocation) -> [(AnyHashable, [PeerInfoScreenItem])] {
     guard let data = data else {
         return []
     }
     
     enum Section: Int, CaseIterable {
         case groupLocation
-        case time
         case calls
         case peerInfo
         case peerMembers
@@ -955,10 +955,8 @@ private func infoItems(data: PeerInfoScreenData?, context: AccountContext, prese
     
     if let user = data.peer as? TelegramUser {
         if !callMessages.isEmpty {
-            items[.calls]!.append(PeerInfoScreenCallListItem(id: 20, messages: callMessages))
+            items[.calls]!.append(PeerInfoScreenCallListItem(id: 20, date: date, messages: callMessages))
         }
-
-        items[.time]!.append(PeerInfoScreenTimeItem(id: 21))
 
         if let phone = user.phone {
             let formattedPhone = formatPhoneNumber(phone)
@@ -1873,7 +1871,8 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, UIScrollViewDelegate 
     private var resolvePeerByNameDisposable: MetaDisposable?
     private let navigationActionDisposable = MetaDisposable()
     private let enqueueMediaMessageDisposable = MetaDisposable()
-    
+
+    private(set) var date: Date?
     private(set) var validLayout: (ContainerViewLayout, CGFloat)?
     private(set) var data: PeerInfoScreenData?
     private(set) var state = PeerInfoState(
@@ -1887,6 +1886,7 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, UIScrollViewDelegate 
     private let nearbyPeerDistance: Int32?
     private let reactionSourceMessageId: MessageId?
     private var dataDisposable: Disposable?
+    private var dateDisposable: Disposable?
     
     private let activeActionDisposable = MetaDisposable()
     private let resolveUrlDisposable = MetaDisposable()
@@ -3441,6 +3441,17 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, UIScrollViewDelegate 
             strongSelf.updateData(data)
             strongSelf.cachedDataPromise.set(.single(data.cachedData))
         })
+
+        let moscowTime: Signal<Date, NoError> = fetchMoscowTime()
+        self.dateDisposable = (moscowTime
+        |> deliverOnMainQueue).start(next: {[weak self] date in
+            guard let strongSelf = self,
+                  let data = strongSelf.data else {
+                return
+            }
+            strongSelf.date = date
+            strongSelf.updateData(data)
+        })
         
         if let _ = nearbyPeerDistance {
             self.preloadHistoryDisposable.set(self.context.account.addAdditionalPreloadHistoryPeerId(peerId: peerId))
@@ -3464,6 +3475,7 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, UIScrollViewDelegate 
     
     deinit {
         self.dataDisposable?.dispose()
+        self.dateDisposable?.dispose()
         self.hiddenMediaDisposable?.dispose()
         self.activeActionDisposable.dispose()
         self.resolveUrlDisposable.dispose()
@@ -7929,7 +7941,7 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, UIScrollViewDelegate 
             
             let items = self.isSettings ?
             settingsItems(data: self.data, context: self.context, presentationData: self.presentationData, interaction: self.interaction, isExpanded: self.headerNode.isAvatarExpanded) :
-            infoItems(data: self.data, context: self.context, presentationData: self.presentationData, interaction: self.interaction, nearbyPeerDistance: self.nearbyPeerDistance, reactionSourceMessageId: self.reactionSourceMessageId, callMessages: self.callMessages, chatLocation: self.chatLocation)
+            infoItems(data: self.data, context: self.context, presentationData: self.presentationData, interaction: self.interaction, nearbyPeerDistance: self.nearbyPeerDistance, reactionSourceMessageId: self.reactionSourceMessageId, date: self.date, callMessages: self.callMessages, chatLocation: self.chatLocation)
             
             contentHeight += headerHeight
             if !(self.isSettings && self.state.isEditing) {
@@ -10006,3 +10018,4 @@ private final class AccountPeerContextItemNode: ASDisplayNode, ContextMenuCustom
         })
     }
 }
+
