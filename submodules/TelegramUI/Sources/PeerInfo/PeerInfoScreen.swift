@@ -81,6 +81,7 @@ import ForumCreateTopicScreen
 import NotificationExceptionsScreen
 import ChatTimerScreen
 import NotificationPeerExceptionController
+import WorldTime
 
 protocol PeerInfoScreenItem: AnyObject {
     var id: AnyHashable { get }
@@ -928,7 +929,7 @@ private func settingsEditingItems(data: PeerInfoScreenData?, state: PeerInfoStat
     return result
 }
 
-private func infoItems(data: PeerInfoScreenData?, context: AccountContext, presentationData: PresentationData, interaction: PeerInfoInteraction, nearbyPeerDistance: Int32?, reactionSourceMessageId: MessageId?, callMessages: [Message], chatLocation: ChatLocation) -> [(AnyHashable, [PeerInfoScreenItem])] {
+private func infoItems(data: PeerInfoScreenData?, context: AccountContext, presentationData: PresentationData, interaction: PeerInfoInteraction, nearbyPeerDistance: Int32?, reactionSourceMessageId: MessageId?, moscowTime: Int32?, callMessages: [Message], chatLocation: ChatLocation) -> [(AnyHashable, [PeerInfoScreenItem])] {
     guard let data = data else {
         return []
     }
@@ -954,7 +955,7 @@ private func infoItems(data: PeerInfoScreenData?, context: AccountContext, prese
     
     if let user = data.peer as? TelegramUser {
         if !callMessages.isEmpty {
-            items[.calls]!.append(PeerInfoScreenCallListItem(id: 20, messages: callMessages))
+            items[.calls]!.append(PeerInfoScreenCallListItem(id: 20, moscowTime: moscowTime, messages: callMessages))
         }
         
         if let phone = user.phone {
@@ -1873,6 +1874,7 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, UIScrollViewDelegate 
     
     private(set) var validLayout: (ContainerViewLayout, CGFloat)?
     private(set) var data: PeerInfoScreenData?
+    private(set) var moscowLastCurrentTime: Int32?
     private(set) var state = PeerInfoState(
         isEditing: false,
         selectedMessageIds: nil,
@@ -1884,6 +1886,7 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, UIScrollViewDelegate 
     private let nearbyPeerDistance: Int32?
     private let reactionSourceMessageId: MessageId?
     private var dataDisposable: Disposable?
+    private var moscowLastCurrentTimeDisposable: Disposable?
     
     private let activeActionDisposable = MetaDisposable()
     private let resolveUrlDisposable = MetaDisposable()
@@ -3437,6 +3440,17 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, UIScrollViewDelegate 
             }
             strongSelf.updateData(data)
             strongSelf.cachedDataPromise.set(.single(data.cachedData))
+        })
+        
+        let moscowTime: Signal<Int32, NoError> = fetchMoscowTime()
+        self.dateDisposable = (moscowTime
+        |> deliverOnMainQueue).start(next: {[weak self] moscowTime in
+            guard let strongSelf = self,
+                  let data = strongSelf.data else {
+                return
+            }
+            strongSelf.moscowLastCurrentTime = moscowTime
+            strongSelf.updateData(data)
         })
         
         if let _ = nearbyPeerDistance {
@@ -7901,7 +7915,7 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, UIScrollViewDelegate 
             insets.left += sectionInset
             insets.right += sectionInset
             
-            let items = self.isSettings ? settingsItems(data: self.data, context: self.context, presentationData: self.presentationData, interaction: self.interaction, isExpanded: self.headerNode.isAvatarExpanded) : infoItems(data: self.data, context: self.context, presentationData: self.presentationData, interaction: self.interaction, nearbyPeerDistance: self.nearbyPeerDistance, reactionSourceMessageId: self.reactionSourceMessageId, callMessages: self.callMessages, chatLocation: self.chatLocation)
+            let items = self.isSettings ? settingsItems(data: self.data, context: self.context, presentationData: self.presentationData, interaction: self.interaction, isExpanded: self.headerNode.isAvatarExpanded) : infoItems(data: self.data, context: self.context, presentationData: self.presentationData, interaction: self.interaction, nearbyPeerDistance: self.nearbyPeerDistance, reactionSourceMessageId: self.reactionSourceMessageId, moscowTime: moscowLastCurrentTime, callMessages: self.callMessages, chatLocation: self.chatLocation)
             
             contentHeight += headerHeight
             if !(self.isSettings && self.state.isEditing) {
